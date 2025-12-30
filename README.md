@@ -49,7 +49,26 @@ chmod +x md2word
 
 ## 使用方法
 
-### 基本用法
+### 🤖 在 Claude Code 中使用
+
+md2word 专为 Claude Code 优化，支持自然语言操作：
+
+```bash
+# 一键安装
+curl -fsSL https://raw.githubusercontent.com/liyajun2alan/md2word/main/install.sh | bash
+```
+
+安装后，直接用自然语言与 Claude 对话：
+
+```
+"帮我把这个 Markdown 转换为 Word"
+"导出 README.md 为 Word 文档"
+"将技术方案.md 转换成 docx，使用模板.docx"
+```
+
+📖 详见 [Claude Code 使用指南](CLAUDE_CODE.md)
+
+### 💻 命令行使用
 
 ```bash
 # 使用默认模板转换
