@@ -4,7 +4,35 @@ md2word 是一个完全独立的 Python 工具，可以在**任何环境**中使
 
 ## 安装方式
 
-### 方式一：从 GitHub 克隆（推荐）
+### 方式一：使用 pip（最简单，推荐）
+
+```bash
+# 从 GitHub 安装最新版本
+pip install git+https://github.com/liyajun2alan/md2word.git
+
+# 安装到用户目录（不需要 sudo）
+pip install --user git+https://github.com/liyajun2alan/md2word.git
+
+# 安装指定版本
+pip install git+https://github.com/liyajun2alan/md2word.git@v1.0.0
+
+# 开发模式安装（可编辑源码）
+git clone https://github.com/liyajun2alan/md2word.git
+cd md2word
+pip install -e .
+```
+
+安装后可在系统任意位置使用 `md2word` 命令：
+
+```bash
+cd ~/Documents
+md2word report.md report.docx
+
+cd ~/Projects
+md2word README.md README.docx template.docx
+```
+
+### 方式二：从 GitHub 克隆
 
 ```bash
 # 克隆到任意目录
@@ -18,7 +46,7 @@ pip install -r requirements.txt
 chmod +x md2word
 ```
 
-### 方式二：下载压缩包
+### 方式三：下载压缩包
 
 ```bash
 # 下载最新版本
@@ -30,18 +58,6 @@ cd md2word-1.0.0
 
 # 安装依赖
 pip install -r requirements.txt
-```
-
-### 方式三：使用 pip 安装（作为 Python 包）
-
-```bash
-# 从源码安装
-git clone https://github.com/liyajun2alan/md2word.git
-cd md2word
-pip install -e .
-
-# 安装后可以全局使用
-md2word input.md output.docx
 ```
 
 ## 使用方式

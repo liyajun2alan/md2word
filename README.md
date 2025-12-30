@@ -27,25 +27,41 @@
 
 ## 安装
 
-### 依赖要求
+### 方式一：使用 pip（推荐）
 
-- Python 3.8+
-- python-docx
-- mistune 3.x
+```bash
+# 从 GitHub 安装最新版本
+pip install git+https://github.com/liyajun2alan/md2word.git
 
-### 安装步骤
+# 安装到用户目录（不需要 sudo）
+pip install --user git+https://github.com/liyajun2alan/md2word.git
+
+# 安装指定版本
+pip install git+https://github.com/liyajun2alan/md2word.git@v1.0.0
+```
+
+安装后可在任何位置使用 `md2word` 命令。
+
+### 方式二：从源码安装
 
 ```bash
 # 克隆仓库
-git clone https://github.com/你的用户名/md2word.git
+git clone https://github.com/liyajun2alan/md2word.git
 cd md2word
 
-# 安装依赖
-pip install -r requirements.txt
+# 开发模式安装（可编辑）
+pip install -e .
 
-# 添加执行权限
+# 或安装依赖后直接使用
+pip install -r requirements.txt
 chmod +x md2word
 ```
+
+### 依赖要求
+
+- Python 3.8+
+- python-docx >= 0.8.11
+- mistune >= 3.0.0
 
 ## 使用方法
 
