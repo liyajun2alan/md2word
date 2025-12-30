@@ -171,7 +171,7 @@ A: 创建一个 Word 模板文档，设置好标题、正文、表格等样式�
 
 ## 作者
 
-李亚军 - [@liyajun2008](https://github.com/liyajun2008)
+李亚军 - [@liyajun2alan](https://github.com/liyajun2alan)
 
 ## 更新日志
 

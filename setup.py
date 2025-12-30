@@ -25,7 +25,7 @@ setup(
     long_description_content_type="text/markdown",
     author="李亚军",
     author_email="744191027@qq.com",
-    url="https://github.com/liyajun2008/md2word",  # 需要替换为实际的GitHub用户名
+    url="https://github.com/liyajun2alan/md2word",
     packages=find_packages(),
     package_data={
         "": ["references/*.docx"],
@@ -56,7 +56,7 @@ setup(
     ],
     keywords="markdown word docx converter document",
     project_urls={
-        "Bug Reports": "https://github.com/liyajun2008/md2word/issues",
-        "Source": "https://github.com/liyajun2008/md2word",
+        "Bug Reports": "https://github.com/liyajun2alan/md2word/issues",
+        "Source": "https://github.com/liyajun2alan/md2word",
     },
 )
