@@ -23,9 +23,9 @@ setup(
     description="Convert Markdown to Word documents with template formatting",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    author="Your Name",  # 替换为您的名字
-    author_email="your.email@example.com",  # 替换为您的邮箱
-    url="https://github.com/yourusername/md2word",  # 替换为您的GitHub仓库URL
+    author="李亚军",
+    author_email="744191027@qq.com",
+    url="https://github.com/liyajun2008/md2word",  # 需要替换为实际的GitHub用户名
     packages=find_packages(),
     package_data={
         "": ["references/*.docx"],
@@ -56,7 +56,7 @@ setup(
     ],
     keywords="markdown word docx converter document",
     project_urls={
-        "Bug Reports": "https://github.com/yourusername/md2word/issues",
-        "Source": "https://github.com/yourusername/md2word",
+        "Bug Reports": "https://github.com/liyajun2008/md2word/issues",
+        "Source": "https://github.com/liyajun2008/md2word",
     },
 )
