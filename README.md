@@ -2,6 +2,10 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/liyajun2alan/md2word)](https://github.com/liyajun2alan/md2word/releases)
+[![GitHub stars](https://img.shields.io/github/stars/liyajun2alan/md2word?style=social)](https://github.com/liyajun2alan/md2word)
+[![GitHub issues](https://img.shields.io/github/issues/liyajun2alan/md2word)](https://github.com/liyajun2alan/md2word/issues)
+[![GitHub last commit](https://img.shields.io/github/last-commit/liyajun2alan/md2word)](https://github.com/liyajun2alan/md2word/commits/main)
 
 将 Markdown 文件按照 Word 模板格式转换为 Word 文档的工具。支持保留模板样式、自动编号、表格格式等功能。
 
