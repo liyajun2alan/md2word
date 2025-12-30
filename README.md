@@ -70,23 +70,20 @@ curl -fsSL https://raw.githubusercontent.com/liyajun2alan/md2word/main/install.s
 
 ### 💻 命令行使用
 
+md2word 是完全独立的 Python 工具，可在任何环境中使用，无需 Claude Code。
+
 ```bash
 # 使用默认模板转换
 ./md2word input.md output.docx
 
 # 使用自定义模板转换
 ./md2word input.md output.docx template.docx
-```
 
-### 示例
-
-```bash
 # 转换技术文档
 ./md2word 技术方案.md 技术方案.docx 模板.docx
-
-# 转换到当前目录
-./md2word README.md README.docx
 ```
+
+📖 详见 [独立使用指南](STANDALONE_USAGE.md) - 包含 Python 集成、Web API、Docker 部署等高级用法
 
 ## 配置说明
 
