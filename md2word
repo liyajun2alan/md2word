@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# md2word Skill 入口脚本
+
+SCRIPT_DIR="/Users/liyajun/.claude/skills/md2word/scripts"
+
+# 参数验证
+if [ $# -lt 2 ]; then
+    echo "❌ 错误: 参数不足"
+    echo "用法: md2word <md文件> <word文件> [模板文件]"
+    echo ""
+    echo "示例:"
+    echo "  md2word report.md output.docx"
+    echo "  md2word report.md output.docx template.docx"
+    exit 1
+fi
+
+# 调用 Python 主程序
+python3 "$SCRIPT_DIR/main.py" "$@"

@@ -1,0 +1,14 @@
+# Word 文档操作
+python-docx>=0.8.11
+
+# Markdown 解析
+mistune>=2.0.5
+
+# HTML 解析（处理嵌入的 HTML 表格等）
+beautifulsoup4>=4.12.0
+
+# 图片下载（网络图片）
+requests>=2.31.0
+
+# 图片处理（用于调整大小）
+Pillow>=10.0.0
