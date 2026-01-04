@@ -62,6 +62,9 @@ class WordGenerator:
                 # 没有模板路径，创建空白文档
                 self.doc = Document()
 
+        # 确保文档有列表编号定义
+        self._ensure_list_numbering()
+
     def append_elements(self, elements: List[Dict[str, Any]]):
         """追加元素到文档
 
@@ -129,6 +132,152 @@ class WordGenerator:
 
         return None
 
+    def _ensure_list_numbering(self):
+        """确保文档有列表编号定义（bullet和numbered list）"""
+        # 确保有numbering part
+        if not hasattr(self.doc.part, 'numbering_part') or self.doc.part.numbering_part is None:
+            # 如果没有numbering part，添加一个临时段落使其被创建
+            temp_para = self.doc.add_paragraph()
+            self._add_numbering_to_paragraph(temp_para, 1)
+            # 删除临时段落
+            p = temp_para._element
+            p.getparent().remove(p)
+
+        numbering_part = self.doc.part.numbering_part
+        numbering_element = numbering_part._element
+
+        # 检查是否已有bullet和numbered list的编号定义
+        # 我们需要创建两个新的abstractNum：一个用于bullet，一个用于numbered
+        abstractNums = numbering_element.findall(qn('w:abstractNum'))
+        existing_abstract_ids = [int(an.get(qn('w:abstractNumId'))) for an in abstractNums]
+
+        # 获取下一个可用的abstractNumId
+        next_abstract_id = max(existing_abstract_ids) + 1 if existing_abstract_ids else 0
+
+        # 创建bullet list的编号定义
+        bullet_abstract_id = next_abstract_id
+        bullet_abstract = self._create_bullet_abstract_num(bullet_abstract_id)
+        numbering_element.append(bullet_abstract)
+
+        # 创建numbered list的编号定义
+        numbered_abstract_id = next_abstract_id + 1
+        numbered_abstract = self._create_numbered_abstract_num(numbered_abstract_id)
+        numbering_element.append(numbered_abstract)
+
+        # 创建对应的num实例
+        nums = numbering_element.findall(qn('w:num'))
+        existing_num_ids = [int(n.get(qn('w:numId'))) for n in nums]
+        next_num_id = max(existing_num_ids) + 1 if existing_num_ids else 1
+
+        # 为bullet list创建num
+        bullet_num_id = next_num_id
+        bullet_num = self._create_num_element(bullet_num_id, bullet_abstract_id)
+        numbering_element.append(bullet_num)
+
+        # 为numbered list创建num
+        numbered_num_id = next_num_id + 1
+        numbered_num = self._create_num_element(numbered_num_id, numbered_abstract_id)
+        numbering_element.append(numbered_num)
+
+        # 保存numId供后续使用
+        self.bullet_num_id = str(bullet_num_id)
+        self.numbered_num_id = str(numbered_num_id)
+
+    def _create_bullet_abstract_num(self, abstract_id):
+        """创建bullet list的抽象编号定义"""
+        abstractNum = OxmlElement('w:abstractNum')
+        abstractNum.set(qn('w:abstractNumId'), str(abstract_id))
+
+        # 创建一个级别（级别0）
+        lvl = OxmlElement('w:lvl')
+        lvl.set(qn('w:ilvl'), '0')
+
+        # 编号格式：bullet
+        numFmt = OxmlElement('w:numFmt')
+        numFmt.set(qn('w:val'), 'bullet')
+        lvl.append(numFmt)
+
+        # 显示文本：使用bullet符号（使用·中点符号）
+        lvlText = OxmlElement('w:lvlText')
+        lvlText.set(qn('w:val'), '·')
+        lvl.append(lvlText)
+
+        # 对齐方式
+        lvlJc = OxmlElement('w:lvlJc')
+        lvlJc.set(qn('w:val'), 'left')
+        lvl.append(lvlJc)
+
+        # 段落属性：缩进
+        pPr = OxmlElement('w:pPr')
+        ind = OxmlElement('w:ind')
+        ind.set(qn('w:left'), '720')  # 左缩进
+        ind.set(qn('w:hanging'), '360')  # 悬挂缩进
+        pPr.append(ind)
+        lvl.append(pPr)
+
+        # 字体
+        rPr = OxmlElement('w:rPr')
+        rFonts = OxmlElement('w:rFonts')
+        rFonts.set(qn('w:ascii'), 'Symbol')
+        rFonts.set(qn('w:hAnsi'), 'Symbol')
+        rFonts.set(qn('w:hint'), 'default')
+        rPr.append(rFonts)
+        lvl.append(rPr)
+
+        abstractNum.append(lvl)
+        return abstractNum
+
+    def _create_numbered_abstract_num(self, abstract_id):
+        """创建numbered list的抽象编号定义"""
+        abstractNum = OxmlElement('w:abstractNum')
+        abstractNum.set(qn('w:abstractNumId'), str(abstract_id))
+
+        # 创建一个级别（级别0）
+        lvl = OxmlElement('w:lvl')
+        lvl.set(qn('w:ilvl'), '0')
+
+        # 编号格式：decimal
+        numFmt = OxmlElement('w:numFmt')
+        numFmt.set(qn('w:val'), 'decimal')
+        lvl.append(numFmt)
+
+        # 显示文本：数字加点
+        lvlText = OxmlElement('w:lvlText')
+        lvlText.set(qn('w:val'), '%1.')
+        lvl.append(lvlText)
+
+        # 起始值
+        start = OxmlElement('w:start')
+        start.set(qn('w:val'), '1')
+        lvl.append(start)
+
+        # 对齐方式
+        lvlJc = OxmlElement('w:lvlJc')
+        lvlJc.set(qn('w:val'), 'left')
+        lvl.append(lvlJc)
+
+        # 段落属性：缩进
+        pPr = OxmlElement('w:pPr')
+        ind = OxmlElement('w:ind')
+        ind.set(qn('w:left'), '720')  # 左缩进
+        ind.set(qn('w:hanging'), '360')  # 悬挂缩进
+        pPr.append(ind)
+        lvl.append(pPr)
+
+        abstractNum.append(lvl)
+        return abstractNum
+
+    def _create_num_element(self, num_id, abstract_num_id):
+        """创建num元素"""
+        num = OxmlElement('w:num')
+        num.set(qn('w:numId'), str(num_id))
+
+        abstractNumId = OxmlElement('w:abstractNumId')
+        abstractNumId.set(qn('w:val'), str(abstract_num_id))
+        num.append(abstractNumId)
+
+        return num
+
     def _add_numbering_to_paragraph(self, paragraph, level):
         """为段落添加编号配置
 
@@ -158,6 +307,43 @@ class WordGenerator:
         # 设置 ilvl（编号级别，0-based）
         ilvl_elem = OxmlElement('w:ilvl')
         ilvl_elem.set(qn('w:val'), str(level - 1))  # level 1 -> ilvl 0
+        numPr.append(ilvl_elem)
+
+        # 设置 numId（编号ID）
+        numId_elem = OxmlElement('w:numId')
+        numId_elem.set(qn('w:val'), num_id)
+        numPr.append(numId_elem)
+
+        # 添加到段落属性
+        pPr.append(numPr)
+
+    def _add_list_numbering(self, paragraph, is_ordered):
+        """为列表段落添加编号配置
+
+        Args:
+            paragraph: 段落对象
+            is_ordered: 是否为有序列表
+        """
+        # 使用预先创建的bullet或numbered list的numId
+        num_id = self.numbered_num_id if is_ordered else self.bullet_num_id
+
+        # 为段落添加编号配置
+        pPr = paragraph._element.pPr
+        if pPr is None:
+            pPr = OxmlElement('w:pPr')
+            paragraph._element.insert(0, pPr)
+
+        # 删除旧的 numPr（如果存在）
+        old_numPr = pPr.find(qn('w:numPr'))
+        if old_numPr is not None:
+            pPr.remove(old_numPr)
+
+        # 创建新的 numPr
+        numPr = OxmlElement('w:numPr')
+
+        # 设置 ilvl（编号级别，0-based）
+        ilvl_elem = OxmlElement('w:ilvl')
+        ilvl_elem.set(qn('w:val'), '0')  # 列表项使用级别0
         numPr.append(ilvl_elem)
 
         # 设置 numId（编号ID）
@@ -291,33 +477,16 @@ class WordGenerator:
             if not item_text or item_text in ['•', '●', '■', '□', '◆', '◇', '▪', '▫']:
                 continue
 
-            # 尝试使用 Word 内置列表样式
-            para = None
-            style_failed = False
-            try:
-                if element['ordered']:
-                    para = self.doc.add_paragraph(item, style='List Number')
-                else:
-                    para = self.doc.add_paragraph(item, style='List Bullet')
-            except:
-                # 样式不存在，标记失败
-                style_failed = True
+            # 创建普通段落
+            para = self.doc.add_paragraph(item)
 
-                # 如果段落已经被添加（即使样式失败），需要删除它
-                if len(self.doc.paragraphs) > 0:
-                    last_para = self.doc.paragraphs[-1]
-                    if last_para.text == item:
-                        # 删除刚才添加的段落
-                        p = last_para._element
-                        p.getparent().remove(p)
-
-                # 使用普通段落并手动添加项目符号
-                para = self.doc.add_paragraph()
-                para.text = f"• {item}"
+            # 添加列表编号
+            self._add_list_numbering(para, element['ordered'])
 
             # 如果有自定义列表格式，应用它
             if 'list' in self.format_styles:
                 self._apply_paragraph_format(para, self.format_styles['list'])
+
 
     def _add_table(self, element: Dict[str, Any]):
         """添加表格
@@ -455,11 +624,21 @@ class WordGenerator:
 
         # 应用运行级别的格式（字体）
         for run in paragraph.runs:
-            if format_dict.get('font_name'):
-                font_name = format_dict['font_name']
+            # 分别处理西文字体和东亚字体
+            font_name = format_dict.get('font_name')
+            east_asia_font = format_dict.get('east_asia_font')
+
+            # 设置西文字体
+            if font_name:
                 run.font.name = font_name
-                # 设置东亚字体（用于中文显示）
+
+            # 设置东亚字体（中文字体）
+            if east_asia_font:
+                run._element.rPr.rFonts.set(qn('w:eastAsia'), east_asia_font)
+            elif font_name:
+                # 如果没有单独的东亚字体，使用西文字体作为东亚字体
                 run._element.rPr.rFonts.set(qn('w:eastAsia'), font_name)
+
             if format_dict.get('font_size') is not None:
                 run.font.size = format_dict['font_size']
             if format_dict.get('bold') is not None:
@@ -607,10 +786,18 @@ class WordGenerator:
         run = para.add_run(cell_text)
 
         # 应用字体格式
-        if table_format.get('cell_font_name'):
-            font_name = table_format['cell_font_name']
+        font_name = table_format.get('cell_font_name')
+        east_asia_font = table_format.get('cell_east_asia_font')
+
+        # 设置西文字体
+        if font_name:
             run.font.name = font_name
-            # 设置东亚字体（用于中文显示）
+
+        # 设置东亚字体（中文字体）
+        if east_asia_font:
+            run._element.rPr.rFonts.set(qn('w:eastAsia'), east_asia_font)
+        elif font_name:
+            # 如果没有单独的东亚字体，使用西文字体作为东亚字体
             run._element.rPr.rFonts.set(qn('w:eastAsia'), font_name)
         if table_format.get('cell_font_size') is not None:
             run.font.size = table_format['cell_font_size']

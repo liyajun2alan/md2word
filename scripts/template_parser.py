@@ -61,10 +61,16 @@ class TemplateParser:
         if not any(k.startswith('heading') for k in self.format_styles.keys()):
             self._extract_from_heading_styles()
 
+        # 如果没有提取到列表格式，使用正文格式作为列表格式
+        if 'list' not in self.format_styles and 'body' in self.format_styles:
+            self.format_styles['list'] = self.format_styles['body'].copy()
+
         return self.format_styles
 
     def _extract_from_heading_styles(self):
         """从模板的 Heading 样式中提取格式（当没有标识符时）"""
+        from docx.oxml.ns import qn
+
         try:
             styles = self.template_doc.styles
 
@@ -90,22 +96,92 @@ class TemplateParser:
                     if style.font.color and style.font.color.rgb:
                         format_dict['color'] = style.font.color.rgb
 
-                    # 段落格式
-                    pf = style.paragraph_format
-                    if pf.alignment is not None:
-                        format_dict['alignment'] = pf.alignment
-                    if pf.line_spacing is not None:
-                        format_dict['line_spacing'] = pf.line_spacing
-                    if pf.space_before is not None:
-                        format_dict['space_before'] = pf.space_before
-                    if pf.space_after is not None:
-                        format_dict['space_after'] = pf.space_after
-                    if pf.first_line_indent is not None:
-                        format_dict['first_line_indent'] = pf.first_line_indent
-                    if pf.left_indent is not None:
-                        format_dict['left_indent'] = pf.left_indent
-                    if pf.right_indent is not None:
-                        format_dict['right_indent'] = pf.right_indent
+                    # 优先从样式定义的XML中提取eastAsia字体
+                    if hasattr(style, '_element'):
+                        rPr = style._element.find(qn('w:rPr'))
+                        if rPr is not None:
+                            rFonts = rPr.find(qn('w:rFonts'))
+                            if rFonts is not None:
+                                eastAsia = rFonts.get(qn('w:eastAsia'))
+                                if eastAsia:
+                                    format_dict['east_asia_font'] = eastAsia
+
+                    # 从实际段落中提取完整格式(字体、段落格式)
+                    # 收集所有实际段落的格式,使用最常出现的那个
+                    east_asia_fonts = {}
+                    font_sizes = {}
+                    alignments = {}
+                    line_spacings = {}
+                    space_befores = {}
+                    space_afters = {}
+                    first_line_indents = {}
+                    left_indents = {}
+                    right_indents = {}
+
+                    for para in self.template_doc.paragraphs:
+                        if para.style and para.style.name == style_name:
+                            # 提取字体格式
+                            if para.runs:
+                                run = para.runs[0]
+                                # eastAsia字体
+                                if run._element.rPr is not None and run._element.rPr.rFonts is not None:
+                                    east_asia = run._element.rPr.rFonts.get(qn('w:eastAsia'))
+                                    if east_asia:
+                                        east_asia_fonts[east_asia] = east_asia_fonts.get(east_asia, 0) + 1
+                                # 字体大小
+                                if run.font.size is not None:
+                                    font_sizes[run.font.size] = font_sizes.get(run.font.size, 0) + 1
+
+                            # 提取段落格式
+                            pf = para.paragraph_format
+                            if pf.alignment is not None:
+                                alignments[pf.alignment] = alignments.get(pf.alignment, 0) + 1
+                            if pf.line_spacing is not None:
+                                line_spacings[pf.line_spacing] = line_spacings.get(pf.line_spacing, 0) + 1
+                            if pf.space_before is not None:
+                                space_befores[pf.space_before] = space_befores.get(pf.space_before, 0) + 1
+                            if pf.space_after is not None:
+                                space_afters[pf.space_after] = space_afters.get(pf.space_after, 0) + 1
+                            if pf.first_line_indent is not None:
+                                first_line_indents[pf.first_line_indent] = first_line_indents.get(pf.first_line_indent, 0) + 1
+                            if pf.left_indent is not None:
+                                left_indents[pf.left_indent] = left_indents.get(pf.left_indent, 0) + 1
+                            if pf.right_indent is not None:
+                                right_indents[pf.right_indent] = right_indents.get(pf.right_indent, 0) + 1
+
+                    # 使用最常见的格式值(优先使用实际段落的格式)
+                    if east_asia_fonts:
+                        most_common_font = max(east_asia_fonts.items(), key=lambda x: x[1])[0]
+                        format_dict['east_asia_font'] = most_common_font
+
+                    if font_sizes:
+                        most_common_size = max(font_sizes.items(), key=lambda x: x[1])[0]
+                        format_dict['font_size'] = most_common_size
+
+                    if alignments:
+                        format_dict['alignment'] = max(alignments.items(), key=lambda x: x[1])[0]
+
+                    if line_spacings:
+                        format_dict['line_spacing'] = max(line_spacings.items(), key=lambda x: x[1])[0]
+
+                    if space_befores:
+                        format_dict['space_before'] = max(space_befores.items(), key=lambda x: x[1])[0]
+
+                    if space_afters:
+                        format_dict['space_after'] = max(space_afters.items(), key=lambda x: x[1])[0]
+
+                    if first_line_indents:
+                        format_dict['first_line_indent'] = max(first_line_indents.items(), key=lambda x: x[1])[0]
+
+                    if left_indents:
+                        format_dict['left_indent'] = max(left_indents.items(), key=lambda x: x[1])[0]
+
+                    if right_indents:
+                        format_dict['right_indent'] = max(right_indents.items(), key=lambda x: x[1])[0]
+
+                    # 如果有eastAsia字体但没有font_name,使用eastAsia字体作为font_name
+                    if format_dict.get('east_asia_font') and not format_dict.get('font_name'):
+                        format_dict['font_name'] = format_dict['east_asia_font']
 
                     self.format_styles[format_key] = format_dict
 
@@ -114,7 +190,8 @@ class TemplateParser:
                     pass
 
             # 尝试提取 Normal 或 Body Text 作为正文格式
-            for style_name in ['Body Text', 'Normal']:
+            # 优先尝试Normal,因为Normal通常有更多实际段落
+            for style_name in ['Normal', 'Body Text']:
                 try:
                     style = styles[style_name]
                     format_dict = {}
@@ -124,15 +201,92 @@ class TemplateParser:
                     if style.font.size:
                         format_dict['font_size'] = style.font.size
 
-                    pf = style.paragraph_format
-                    if pf.line_spacing is not None:
-                        format_dict['line_spacing'] = pf.line_spacing
-                    if pf.space_before is not None:
-                        format_dict['space_before'] = pf.space_before
-                    if pf.space_after is not None:
-                        format_dict['space_after'] = pf.space_after
-                    if pf.first_line_indent is not None:
-                        format_dict['first_line_indent'] = pf.first_line_indent
+                    # 优先从样式定义的XML中提取eastAsia字体
+                    if hasattr(style, '_element'):
+                        rPr = style._element.find(qn('w:rPr'))
+                        if rPr is not None:
+                            rFonts = rPr.find(qn('w:rFonts'))
+                            if rFonts is not None:
+                                eastAsia = rFonts.get(qn('w:eastAsia'))
+                                if eastAsia:
+                                    format_dict['east_asia_font'] = eastAsia
+
+                    # 从实际段落中提取完整格式(字体、段落格式)
+                    # 收集所有实际段落的格式,使用最常出现的那个
+                    east_asia_fonts = {}
+                    font_sizes = {}
+                    alignments = {}
+                    line_spacings = {}
+                    space_befores = {}
+                    space_afters = {}
+                    first_line_indents = {}
+                    left_indents = {}
+                    right_indents = {}
+
+                    for para in self.template_doc.paragraphs:
+                        if para.style and para.style.name == style_name:
+                            # 提取字体格式
+                            if para.runs:
+                                run = para.runs[0]
+                                # eastAsia字体
+                                if run._element.rPr is not None and run._element.rPr.rFonts is not None:
+                                    east_asia = run._element.rPr.rFonts.get(qn('w:eastAsia'))
+                                    if east_asia:
+                                        east_asia_fonts[east_asia] = east_asia_fonts.get(east_asia, 0) + 1
+                                # 字体大小
+                                if run.font.size is not None:
+                                    font_sizes[run.font.size] = font_sizes.get(run.font.size, 0) + 1
+
+                            # 提取段落格式
+                            pf = para.paragraph_format
+                            if pf.alignment is not None:
+                                alignments[pf.alignment] = alignments.get(pf.alignment, 0) + 1
+                            if pf.line_spacing is not None:
+                                line_spacings[pf.line_spacing] = line_spacings.get(pf.line_spacing, 0) + 1
+                            if pf.space_before is not None:
+                                space_befores[pf.space_before] = space_befores.get(pf.space_before, 0) + 1
+                            if pf.space_after is not None:
+                                space_afters[pf.space_after] = space_afters.get(pf.space_after, 0) + 1
+                            if pf.first_line_indent is not None:
+                                first_line_indents[pf.first_line_indent] = first_line_indents.get(pf.first_line_indent, 0) + 1
+                            if pf.left_indent is not None:
+                                left_indents[pf.left_indent] = left_indents.get(pf.left_indent, 0) + 1
+                            if pf.right_indent is not None:
+                                right_indents[pf.right_indent] = right_indents.get(pf.right_indent, 0) + 1
+
+                    # 使用最常见的格式值
+                    if east_asia_fonts:
+                        most_common_font = max(east_asia_fonts.items(), key=lambda x: x[1])[0]
+                        format_dict['east_asia_font'] = most_common_font
+
+                    if font_sizes:
+                        most_common_size = max(font_sizes.items(), key=lambda x: x[1])[0]
+                        format_dict['font_size'] = most_common_size
+
+                    if alignments:
+                        format_dict['alignment'] = max(alignments.items(), key=lambda x: x[1])[0]
+
+                    if line_spacings:
+                        format_dict['line_spacing'] = max(line_spacings.items(), key=lambda x: x[1])[0]
+
+                    if space_befores:
+                        format_dict['space_before'] = max(space_befores.items(), key=lambda x: x[1])[0]
+
+                    if space_afters:
+                        format_dict['space_after'] = max(space_afters.items(), key=lambda x: x[1])[0]
+
+                    if first_line_indents:
+                        format_dict['first_line_indent'] = max(first_line_indents.items(), key=lambda x: x[1])[0]
+
+                    if left_indents:
+                        format_dict['left_indent'] = max(left_indents.items(), key=lambda x: x[1])[0]
+
+                    if right_indents:
+                        format_dict['right_indent'] = max(right_indents.items(), key=lambda x: x[1])[0]
+
+                    # 如果有eastAsia字体但没有font_name,使用eastAsia字体作为font_name
+                    if format_dict.get('east_asia_font') and not format_dict.get('font_name'):
+                        format_dict['font_name'] = format_dict['east_asia_font']
 
                     self.format_styles['body'] = format_dict
                     break  # 找到一个就退出
@@ -152,12 +306,20 @@ class TemplateParser:
         Returns:
             格式参数字典
         """
+        from docx.oxml.ns import qn
+
         # 获取第一个 run（如果存在）
         run = paragraph.runs[0] if paragraph.runs else None
+
+        # 提取中文字体 (eastAsia)
+        east_asia_font = None
+        if run and run._element.rPr is not None and run._element.rPr.rFonts is not None:
+            east_asia_font = run._element.rPr.rFonts.get(qn('w:eastAsia'))
 
         format_dict = {
             # 字体相关
             'font_name': run.font.name if run and run.font.name else None,
+            'east_asia_font': east_asia_font,  # 添加中文字体
             'font_size': run.font.size if run and run.font.size else None,
             'bold': run.font.bold if run else False,
             'italic': run.font.italic if run else False,
@@ -235,10 +397,16 @@ class TemplateParser:
         if total_width > 0:
             column_width_ratios = [w / total_width for w in column_widths]
 
+        # 提取东亚字体（中文字体）
+        cell_east_asia_font = None
+        if cell_run and cell_run._element.rPr is not None and cell_run._element.rPr.rFonts is not None:
+            cell_east_asia_font = cell_run._element.rPr.rFonts.get(qn('w:eastAsia'))
+
         return {
             'style': table.style.name if table.style else None,
             'cell_font_name': cell_run.font.name if cell_run and cell_run.font.name else None,
             'cell_font_size': cell_run.font.size if cell_run and cell_run.font.size else None,
+            'cell_east_asia_font': cell_east_asia_font,
             'column_widths': column_widths,
             'column_width_ratios': column_width_ratios,
             'header_indent': header_indent,
